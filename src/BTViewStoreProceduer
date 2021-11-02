@@ -1,0 +1,191 @@
+create database HangHoa;
+use HangHoa;
+
+create table vattu(
+    vattu_id int auto_increment primary key ,
+    vattu_code varchar(20) not null ,
+    name varchar(20),
+    donvitinh double,
+    giatien double
+);
+
+alter table vattu modify column donvitinh varchar(10);
+
+create table tonkho(
+    tonkho_id int auto_increment primary key ,
+    vattu_id int not null ,
+    foreign key (vattu_id) references vattu (vattu_id),
+    soluongbandau int,
+    soluongnhap int,
+    soluongxuat int
+);
+
+create table nhacungcap(
+    nhacungcap_id int auto_increment primary key ,
+    nhacungcap_code varchar(20) not null ,
+    name varchar(50),
+    address varchar(50),
+    phone varchar(10)
+);
+
+create table dondathang(
+    dondathang_id int auto_increment primary key ,
+    dondathang_code varchar(20),
+    datedonhang datetime,
+    nhacungcap_id int,
+    foreign key (nhacungcap_id) references nhacungcap(nhacungcap_id)
+);
+
+create table phieunhap(
+    phieunhap_id int auto_increment primary key ,
+    phieunhao_code varchar(20),
+    ngaynhap datetime,
+    dondathang_id int,
+    foreign key (dondathang_id) references dondathang(dondathang_id)
+);
+
+create table phieuxuat(
+    phieuxuat_id int auto_increment primary key ,
+    phieuxuat_code varchar(20),
+    ngayxuat datetime,
+    namecustonmer varchar(20)
+);
+
+create table chitietdonhang(
+    ctdh_id int auto_increment primary key ,
+    dondathang_id int,
+    foreign key (dondathang_id) references dondathang(dondathang_id),
+    vattu_id int,
+    foreign key (vattu_id) references vattu(vattu_id),
+    soluongdat int
+);
+
+create table chiTietPhieuNhap(
+    chiTietPhieuNhap_id int auto_increment primary key ,
+    phieunhap_id int,
+    foreign key (phieunhap_id) references phieunhap(phieunhap_id),
+    vattu_id int,
+    foreign key (vattu_id) references vattu(vattu_id),
+    soLuongNhap int,
+    donGiaNhap double,
+    note varchar(50)
+);
+
+create table chiTietPhieuXuat(
+    chiTietPhieuXuat_id int auto_increment primary key ,
+    phieuxuat_id int,
+    foreign key (phieuxuat_id) references phieuxuat(phieuxuat_id),
+    vattu_id int,
+    foreign key (vattu_id) references vattu(vattu_id),
+    soLuongXuat int,
+    donGiaXuat double,
+    note varchar(50)
+);
+
+
+# Tạo View: số phiếu nhập hàng, mã vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+create view CTPNHAP as
+select c.phieunhap_id, v.vattu_id, c.soLuongNhap, c.donGiaNhap, (soLuongNhap * donGiaNhap) as `Thành tiền`
+from vattu v join chitietphieunhap c on v.vattu_id = c.vattu_id;
+select * from CTPNHAP;
+
+
+# Tạo view CTPNHAP_loc: số phiếu nhập hàng, mã vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+# Và chỉ liệt kê các chi tiết nhập có số lượng nhập > 5.
+create view CTPNHAP_loc as
+select c.phieunhap_id, v.vattu_id, c.soluongnhap, c.donGiaNhap, (soluongnhap*donGiaNhap) as `Thành tiền`
+from chiTietPhieuNhap c join vattu v on c.vattu_id = v.vattu_id
+where c.soLuongNhap >= 50;
+select * from CTPNHAP_loc;
+
+
+# Tạo View CTPNHAP_VT: số phiếu nhập hàng, mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+create view CTPNHAP_VT as
+select c.phieunhap_id, v.vattu_id, v.name, c.soLuongNhap, c.donGiaNhap, (soLuongNhap * donGiaNhap) as `Thành tiền`
+from vattu v join chitietphieunhap c on v.vattu_id = c.vattu_id order by phieunhap_id;
+select * from CTPNHAP_VT;
+
+
+# Tạo View CTPNHAP_VT_PN: số phiếu nhập hàng, ngày nhập hàng, số đơn đặt hàng,
+# mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+create view CTPNHAP_VT_PN as
+select c.phieunhap_id, p.ngaynhap, d.datedonhang, d.dondathang_id, v.vattu_id,v.name,
+       c.soLuongNhap, c.donGiaNhap, (soLuongNhap * donGiaNhap) as `Thành tiền`
+from vattu v join chitietphieunhap c on v.vattu_id = c.vattu_id
+             join phieunhap p on c.phieunhap_id = p.phieunhap_id
+             join dondathang d on p.dondathang_id = d.dondathang_id order by phieunhap_id;
+select * from CTPNHAP_VT_PN;
+
+
+# Tạo View CTPNHAP_VT_PN_DH: số phiếu nhập hàng, ngày nhập hàng, số đơn đặt hàng, mã nhà cung cấp,
+# tên nhà cung cấp, mã vật tư, tên vật tư, số lượng nhập, đơn giá nhập, thành tiền nhập.
+create view CTPNHAP_VT_PN_DH as
+select p.phieunhap_id, p.ngaynhap, d.dondathang_id, d.nhacungcap_id, n.name as `ten ncc`, v.vattu_id,
+       v.name as `ten vat tu`, c.soLuongNhap, c.donGiaNhap, (soLuongNhap*donGiaNhap) as `Thành tiền`
+from vattu v join chitietphieunhap c on v.vattu_id = c.vattu_id
+    join hanghoa.phieunhap p on c.phieunhap_id = p.phieunhap_id
+    join dondathang d on p.dondathang_id = d.dondathang_id
+    join nhacungcap n on d.nhacungcap_id = n.nhacungcap_id;
+select * from CTPNHAP_VT_PN_DH;
+
+
+# Tạo View CTPXUAT_VT_PX: số phiếu xuất hàng, tên khách hàng, mã vật tư, tên vật tư, số lượng xuất, đơn giá xuất.
+create view CTPXUAT_VT_PX as
+    select c.phieuxuat_id, p.namecustonmer, v.vattu_id, v.name, c.soLuongXuat, c.donGiaXuat, (soLuongXuat*donGiaXuat) as `Thành tiền`
+    from chiTietPhieuXuat c join phieuxuat p on c.phieuxuat_id = p.phieuxuat_id
+    join vattu v on c.vattu_id = v.vattu_id;
+select * from CTPXUAT_VT_PX;
+
+
+# Tạo Stored procedure (SP) cho biết tổng số lượng cuối của vật tư với mã vật tư là tham số vào.
+delimiter //
+create procedure tongSoVatTuTheoMa(in maVatTu int)
+begin
+    select v.name, sum(soluongbandau+t.soluongnhap-t.soluongxuat) as `Số lượng còn lại trong kho`
+    from vattu v join tonkho t on v.vattu_id = t.vattu_id
+    where v.vattu_id = maVatTu group by v.vattu_id;
+end //
+call tongSoVatTuTheoMa(1);
+
+
+# Tạo SP cho biết tổng tiền xuất của vật tư với mã vật tư là tham số vào.
+delimiter //
+create procedure tienXuatVatTuTheoMa(in maVatTu int)
+begin
+    select v.name, sum(soLuongXuat*donGiaXuat) as `Tiền xuất vật tư`
+    from chiTietPhieuXuat c join vattu v on c.vattu_id = v.vattu_id
+    where v.vattu_id = maVatTu group by v.vattu_id;
+end //
+call tienXuatVatTuTheoMa(2);
+
+
+# Tạo SP cho biết tổng số lượng đặt theo số đơn hàng với số đơn hàng là tham số vào.
+delimiter //
+create procedure tongSoLuongDatTheoDon(in maDonHang int)
+begin
+    select v.name, sum(soluongdat) as `Số lượng đặt`
+    from chitietdonhang d join vattu v on d.vattu_id = v.vattu_id
+    where d.dondathang_id = maDonHang group by d.dondathang_id;
+end //
+call tongSoLuongDatTheoDon(3);
+
+
+# Tạo SP dùng để thêm một đơn đặt hàng.
+delimiter //
+create procedure themDonDatHang(in idDonHang int, maDonHang varchar(20), ngayDonHang datetime, idNhaCungCap int)
+begin
+    insert into dondathang value (idDonHang, maDonHang, ngayDonHang, idNhaCungCap);
+end //
+call themDonDatHang(7, 'D07', '2021/10/8', 3);
+select * from dondathang;
+
+
+# Tạo SP dùng để thêm một chi tiết đơn đặt hàng.
+# Tương tự
+
+
+
+
+
+
+
