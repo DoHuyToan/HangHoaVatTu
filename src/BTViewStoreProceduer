@@ -143,8 +143,9 @@ create procedure tongSoVatTuTheoMa(in maVatTu int)
 begin
     select v.name, sum(soluongbandau+t.soluongnhap-t.soluongxuat) as `Số lượng còn lại trong kho`
     from vattu v join tonkho t on v.vattu_id = t.vattu_id
-    where v.vattu_id = maVatTu group by v.vattu_id;
+    where v.vattu_id = maVatTu ;
 end //
+drop procedure tongSoVatTuTheoMa;
 call tongSoVatTuTheoMa(1);
 
 
@@ -154,7 +155,7 @@ create procedure tienXuatVatTuTheoMa(in maVatTu int)
 begin
     select v.name, sum(soLuongXuat*donGiaXuat) as `Tiền xuất vật tư`
     from chiTietPhieuXuat c join vattu v on c.vattu_id = v.vattu_id
-    where v.vattu_id = maVatTu group by v.vattu_id;
+    where v.vattu_id = maVatTu;
 end //
 call tienXuatVatTuTheoMa(2);
 
@@ -165,7 +166,7 @@ create procedure tongSoLuongDatTheoDon(in maDonHang int)
 begin
     select v.name, sum(soluongdat) as `Số lượng đặt`
     from chitietdonhang d join vattu v on d.vattu_id = v.vattu_id
-    where d.dondathang_id = maDonHang group by d.dondathang_id;
+    where d.dondathang_id = maDonHang;
 end //
 call tongSoLuongDatTheoDon(3);
 
